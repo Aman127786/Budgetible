@@ -1,0 +1,472 @@
+:root {
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-light: #eef2ff;
+  --income: #10b981;
+  --income-bg: #ecfdf5;
+  --expense: #ef4444;
+  --expense-bg: #fef2f2;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --radius: 12px;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px 16px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Authentication Box */
+.auth-container {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 32px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+}
+
+.brand-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.brand-header h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.brand-header p {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.tabs {
+  display: flex;
+  background: var(--bg);
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow: var(--shadow);
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 0.775rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.925rem;
+  background: #fafafa;
+  transition: border-color 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--surface);
+}
+
+.auth-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.2s ease;
+}
+
+.auth-btn:hover {
+  background-color: var(--primary-hover);
+}
+
+.demo-btn {
+  width: 100%;
+  padding: 10px;
+  background-color: transparent;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.demo-btn:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.error-msg {
+  color: var(--expense);
+  font-size: 0.8rem;
+  margin-top: 6px;
+  display: none;
+}
+
+.success-msg {
+  color: var(--income);
+  font-size: 0.8rem;
+  margin-top: 6px;
+  display: none;
+}
+
+/* Modal Overlay & Dialog */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 16px;
+}
+
+.modal-card {
+  background: var(--surface);
+  width: 100%;
+  max-width: 400px;
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.modal-header h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  color: var(--muted);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.modal-desc {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.btn-cancel {
+  flex: 1;
+  padding: 10px;
+  background: #f1f5f9;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modal-submit {
+  flex: 1.4;
+  margin-top: 0;
+}
+
+/* Dashboard Styles */
+.dashboard-container {
+  width: 100%;
+  max-width: 800px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.user-info h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.user-info p {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.btn-logout {
+  background: #f1f5f9;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-logout:hover {
+  background: #e2e8f0;
+  color: var(--text);
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.summary-card {
+  background: var(--surface);
+  padding: 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.summary-card span {
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-card h3 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin-top: 8px;
+}
+
+.summary-card.balance h3 { color: var(--primary); }
+.summary-card.income h3 { color: var(--income); }
+.summary-card.expense h3 { color: var(--expense); }
+
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.card h4 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.btn-submit {
+  width: 100%;
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-submit:hover {
+  background: var(--primary-hover);
+}
+
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.filter-bar select,
+.filter-bar input {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.filter-bar input {
+  flex: 1;
+}
+
+.tx-list {
+  list-style: none;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.tx-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #fafafa;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  border-left: 4px solid transparent;
+}
+
+.tx-item.income { border-left-color: var(--income); }
+.tx-item.expense { border-left-color: var(--expense); }
+
+.tx-info h5 {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.tx-info span {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.tx-amount {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tx-amount strong {
+  font-size: 0.95rem;
+}
+
+.tx-amount strong.income { color: var(--income); }
+.tx-amount strong.expense { color: var(--expense); }
+
+.del-btn {
+  background: none;
+  border: none;
+  color: #cbd5e1;
+  font-size: 1.25rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.del-btn:hover {
+  color: var(--expense);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--muted);
+  padding: 32px 0;
+  font-size: 0.9rem;
+}

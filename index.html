@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Budget Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- AUTHENTICATION VIEW -->
+  <div id="auth-section" class="auth-container">
+    <div class="brand-header">
+      <h1>Budgetible</h1>
+      <p>Log in or sign up to manage your personal finances</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-login" onclick="switchAuthTab('login')">Log In</button>
+      <button class="tab-btn" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</button>
+    </div>
+
+    <form id="auth-form" onsubmit="handleAuthSubmit(event)">
+      <div class="form-group hidden" id="group-name">
+        <label for="auth-name">Full Name</label>
+        <input type="text" id="auth-name" placeholder="John Doe" autocomplete="name" />
+      </div>
+
+      <div class="form-group">
+        <label for="auth-email">Email Address</label>
+        <input type="email" id="auth-email" placeholder="name@example.com" required autocomplete="email" />
+      </div>
+
+      <div class="form-group">
+        <div class="label-row">
+          <label for="auth-password">Password</label>
+          <button type="button" class="link-btn" id="forgot-password-link" onclick="openResetModal()">Forgot Password?</button>
+        </div>
+        <input type="password" id="auth-password" placeholder="••••••••" required autocomplete="current-password" />
+        <div id="auth-error" class="error-msg"></div>
+      </div>
+
+      <button type="submit" class="auth-btn" id="auth-submit-btn">Log In</button>
+      <button type="button" class="demo-btn" onclick="quickDemoLogin()">⚡ Fast Demo Access</button>
+    </form>
+  </div>
+
+  <!-- FORGOT / RESET PASSWORD MODAL -->
+  <div id="reset-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Reset Password</h3>
+        <button type="button" class="modal-close" onclick="closeResetModal()">&times;</button>
+      </div>
+      <p class="modal-desc">Enter your registered email address and choose a new password.</p>
+
+      <form id="reset-form" onsubmit="handleResetPassword(event)">
+        <div class="form-group">
+          <label for="reset-email">Registered Email</label>
+          <input type="email" id="reset-email" placeholder="name@example.com" required />
+        </div>
+
+        <div class="form-group">
+          <label for="reset-new-pass">New Password</label>
+          <input type="password" id="reset-new-pass" placeholder="At least 6 characters" required />
+        </div>
+
+        <div class="form-group">
+          <label for="reset-confirm-pass">Confirm New Password</label>
+          <input type="password" id="reset-confirm-pass" placeholder="Re-enter new password" required />
+          <div id="reset-error" class="error-msg"></div>
+          <div id="reset-success" class="success-msg"></div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" onclick="closeResetModal()">Cancel</button>
+          <button type="submit" class="auth-btn modal-submit">Update Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- DASHBOARD VIEW -->
+  <div id="dashboard-section" class="dashboard-container hidden">
+    <header class="dashboard-header">
+      <div class="user-info">
+        <h2>Welcome, <span id="current-user-name">User</span>!</h2>
+        <p id="current-user-email">user@example.com</p>
+      </div>
+      <button class="btn-logout" onclick="logout()">Log Out</button>
+    </header>
+
+    <!-- Overview Cards -->
+    <div class="overview-grid">
+      <div class="summary-card balance">
+        <span>Current Net Balance</span>
+        <h3 id="balance-val">₹0.00</h3>
+      </div>
+      <div class="summary-card income">
+        <span>Total Inflow</span>
+        <h3 id="income-val">+₹0.00</h3>
+      </div>
+      <div class="summary-card expense">
+        <span>Total Outflow</span>
+        <h3 id="expense-val">-₹0.00</h3>
+      </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="main-grid">
+      <!-- Add Transaction -->
+      <div class="card">
+        <h4>New Record</h4>
+        <form id="tx-form" onsubmit="handleNewTx(event)">
+          <div class="form-group">
+            <label for="tx-desc">Title</label>
+            <input type="text" id="tx-desc" placeholder="e.g., Salary, Electricity bill" required />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="tx-amount">Amount (₹)</label>
+              <input type="number" id="tx-amount" min="0.01" step="any" placeholder="0.00" required />
+            </div>
+            <div class="form-group">
+              <label for="tx-type">Type</label>
+              <select id="tx-type">
+                <option value="expense">Expense</option>
+                <option value="income">Income</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="tx-category">Category</label>
+            <select id="tx-category">
+              <option value="General">General</option>
+              <option value="Salary">Salary</option>
+              <option value="Groceries">Groceries</option>
+              <option value="Dining">Dining</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Bills">Bills & Utilities</option>
+              <option value="Investment">Investment</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn-submit">Add Entry</button>
+        </form>
+      </div>
+
+      <!-- History & Filtering -->
+      <div class="card">
+        <h4>Transactions</h4>
+        <div class="filter-bar">
+          <input type="text" id="filter-search" placeholder="Search entries..." oninput="renderTransactions()" />
+          <select id="filter-type" onchange="renderTransactions()">
+            <option value="all">All Types</option>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+          </select>
+        </div>
+
+        <ul class="tx-list" id="tx-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
