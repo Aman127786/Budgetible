@@ -1,56 +1,47 @@
-// --- STATE MANAGEMENT ---
-let currentAuthMode = 'login'; // 'login' or 'signup'
+// --- 1. FIREBASE CONFIGURATION ---
+const firebaseConfig = {
+  apiKey: "AIzaSyDXWG_MFR_d_6BmOBKR0vCXAkrzqDwxD8s",
+  authDomain: "my-budget-tracker-1db1a.firebaseapp.com",
+  projectId: "my-budget-tracker-1db1a",
+  storageBucket: "my-budget-tracker-1db1a.firebasestorage.app",
+  messagingSenderId: "112656403654",
+  appId: "1:112656403654:web:b949e53bad04fac0309bc7",
+  measurementId: "G-DZ0VFDZ9YR"
+};
+
+// Initialize Firebase Services
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// Global State
+let currentAuthMode = 'login';
 let currentUser = null;
+let currentTransactions = [];
+let unsubscribeTransactions = null;
 
-// LocalStorage helpers
-function getUsers() {
-  try {
-    const raw = localStorage.getItem('ledger_users');
-    return raw ? JSON.parse(raw) : [];
-  } catch (err) {
-    console.error('Error reading users from storage', err);
-    return [];
+// --- 2. AUTH STATE LISTENER (CROSS-DEVICE SYNC) ---
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    currentUser = user;
+    document.getElementById('auth-section').classList.add('hidden');
+    document.getElementById('dashboard-section').classList.remove('hidden');
+
+    document.getElementById('current-user-name').innerText = user.displayName || 'User';
+    document.getElementById('current-user-email').innerText = user.email;
+
+    listenToUserTransactions(user.uid);
+  } else {
+    currentUser = null;
+    currentTransactions = [];
+    if (unsubscribeTransactions) unsubscribeTransactions();
+
+    document.getElementById('auth-section').classList.remove('hidden');
+    document.getElementById('dashboard-section').classList.add('hidden');
   }
-}
+});
 
-function saveUsers(users) {
-  localStorage.setItem('ledger_users', JSON.stringify(users));
-}
-
-function getSession() {
-  try {
-    const raw = localStorage.getItem('ledger_session');
-    return raw ? JSON.parse(raw) : null;
-  } catch (err) {
-    console.error('Error reading session from storage', err);
-    return null;
-  }
-}
-
-function setSession(user) {
-  localStorage.setItem('ledger_session', JSON.stringify(user));
-}
-
-function clearSession() {
-  localStorage.removeItem('ledger_session');
-}
-
-// Transaction data per user
-function getUserTransactions(email) {
-  try {
-    const raw = localStorage.getItem(`ledger_tx_${email.toLowerCase().trim()}`);
-    return raw ? JSON.parse(raw) : [];
-  } catch (err) {
-    console.error('Error reading transactions', err);
-    return [];
-  }
-}
-
-function saveUserTransactions(email, transactions) {
-  localStorage.setItem(`ledger_tx_${email.toLowerCase().trim()}`, JSON.stringify(transactions));
-}
-
-// --- AUTH SWITCH & SUBMISSION ---
+// --- 3. AUTHENTICATION ACTIONS ---
 function switchAuthTab(mode) {
   currentAuthMode = mode;
   const tabLogin = document.getElementById('tab-login');
@@ -59,8 +50,10 @@ function switchAuthTab(mode) {
   const submitBtn = document.getElementById('auth-submit-btn');
   const forgotLink = document.getElementById('forgot-password-link');
   const errEl = document.getElementById('auth-error');
+  const succEl = document.getElementById('auth-success');
 
   if (errEl) errEl.style.display = 'none';
+  if (succEl) succEl.style.display = 'none';
 
   if (mode === 'login') {
     tabLogin.classList.add('active');
@@ -77,151 +70,61 @@ function switchAuthTab(mode) {
   }
 }
 
-function handleAuthSubmit(e) {
+async function handleAuthSubmit(e) {
   e.preventDefault();
 
   const email = document.getElementById('auth-email').value.trim().toLowerCase();
   const password = document.getElementById('auth-password').value.trim();
   const nameInput = document.getElementById('auth-name');
   const name = nameInput ? nameInput.value.trim() : '';
+  const errEl = document.getElementById('auth-error');
+  const succEl = document.getElementById('auth-success');
 
-  const users = getUsers();
+  if (errEl) errEl.style.display = 'none';
+  if (succEl) succEl.style.display = 'none';
 
-  if (currentAuthMode === 'signup') {
-    if (!name) {
-      showAuthError('Please enter your full name.');
-      return;
+  try {
+    if (currentAuthMode === 'signup') {
+      if (!name) {
+        showAuthError('Please enter your full name.');
+        return;
+      }
+      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+      await userCredential.user.updateProfile({ displayName: name });
+      document.getElementById('auth-form').reset();
+    } else {
+      await auth.signInWithEmailAndPassword(email, password);
+      document.getElementById('auth-form').reset();
     }
-    if (password.length < 6) {
-      showAuthError('Password must be at least 6 characters long.');
-      return;
-    }
-
-    const existing = users.find(u => u.email.trim().toLowerCase() === email);
-    if (existing) {
-      showAuthError('An account with this email already exists. Please Log In.');
-      return;
-    }
-
-    const newUser = { name, email, password };
-    users.push(newUser);
-    saveUsers(users);
-    initDashboard(newUser);
-  } else {
-    const account = users.find(u => u.email.trim().toLowerCase() === email);
-
-    if (!account) {
-      showAuthError('No account found with this email. Please Sign Up first.');
-      return;
-    }
-
-    if (account.password.trim() !== password) {
-      showAuthError('Incorrect password. Please try again.');
-      return;
-    }
-
-    initDashboard(account);
+  } catch (error) {
+    showAuthError(formatFirebaseError(error.code));
   }
 }
 
-// --- FORGOT / RESET PASSWORD MODAL LOGIC ---
-function openResetModal() {
-  const modal = document.getElementById('reset-modal');
-  const authEmail = document.getElementById('auth-email').value.trim();
-  const resetEmail = document.getElementById('reset-email');
-  const errEl = document.getElementById('reset-error');
-  const successEl = document.getElementById('reset-success');
+async function handleForgotPassword() {
+  const email = document.getElementById('auth-email').value.trim().toLowerCase();
+  const errEl = document.getElementById('auth-error');
+  const succEl = document.getElementById('auth-success');
 
-  if (authEmail) {
-    resetEmail.value = authEmail;
-  }
+  if (errEl) errEl.style.display = 'none';
+  if (succEl) succEl.style.display = 'none';
 
-  errEl.style.display = 'none';
-  successEl.style.display = 'none';
-  modal.classList.remove('hidden');
-}
-
-function closeResetModal() {
-  const modal = document.getElementById('reset-modal');
-  document.getElementById('reset-form').reset();
-  modal.classList.add('hidden');
-}
-
-function handleResetPassword(e) {
-  e.preventDefault();
-
-  const email = document.getElementById('reset-email').value.trim().toLowerCase();
-  const newPass = document.getElementById('reset-new-pass').value.trim();
-  const confirmPass = document.getElementById('reset-confirm-pass').value.trim();
-  const errEl = document.getElementById('reset-error');
-  const successEl = document.getElementById('reset-success');
-
-  errEl.style.display = 'none';
-  successEl.style.display = 'none';
-
-  if (newPass.length < 6) {
-    errEl.innerText = 'New password must be at least 6 characters long.';
-    errEl.style.display = 'block';
+  if (!email) {
+    showAuthError('Please enter your email address in the email field first.');
     return;
   }
 
-  if (newPass !== confirmPass) {
-    errEl.innerText = 'Passwords do not match.';
-    errEl.style.display = 'block';
-    return;
+  try {
+    await auth.sendPasswordResetEmail(email);
+    succEl.innerText = 'Password reset email sent! Please check your inbox.';
+    succEl.style.display = 'block';
+  } catch (error) {
+    showAuthError(formatFirebaseError(error.code));
   }
-
-  const users = getUsers();
-  const userIndex = users.findIndex(u => u.email.trim().toLowerCase() === email);
-
-  if (userIndex === -1) {
-    errEl.innerText = 'No account registered with this email.';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  // Update password
-  users[userIndex].password = newPass;
-  saveUsers(users);
-
-  successEl.innerText = 'Password updated successfully! Redirecting to login...';
-  successEl.style.display = 'block';
-
-  setTimeout(() => {
-    closeResetModal();
-    // Prefill login input
-    document.getElementById('auth-email').value = email;
-    document.getElementById('auth-password').value = '';
-    document.getElementById('auth-password').focus();
-    switchAuthTab('login');
-  }, 1200);
 }
 
-function quickDemoLogin() {
-  const demoEmail = 'demo@ledgerflow.local';
-  const demoPassword = 'demopassword';
-
-  const users = getUsers();
-  let demoUser = users.find(u => u.email === demoEmail);
-
-  if (!demoUser) {
-    demoUser = {
-      name: 'Demo User',
-      email: demoEmail,
-      password: demoPassword
-    };
-    users.push(demoUser);
-    saveUsers(users);
-
-    const sampleData = [
-      { id: '1', desc: 'Monthly Salary', amount: 45000, type: 'income', category: 'Salary', date: 'Just now' },
-      { id: '2', desc: 'Groceries & Supermarket', amount: 3200, type: 'expense', category: 'Groceries', date: 'Yesterday' },
-      { id: '3', desc: 'Electric & Wi-Fi Bill', amount: 1850, type: 'expense', category: 'Bills', date: '3 days ago' }
-    ];
-    saveUserTransactions(demoUser.email, sampleData);
-  }
-
-  initDashboard(demoUser);
+function logout() {
+  auth.signOut();
 }
 
 function showAuthError(msg) {
@@ -232,34 +135,44 @@ function showAuthError(msg) {
   }
 }
 
-function initDashboard(user) {
-  currentUser = user;
-  setSession(user);
-
-  document.getElementById('auth-section').classList.add('hidden');
-  document.getElementById('dashboard-section').classList.remove('hidden');
-
-  document.getElementById('current-user-name').innerText = user.name;
-  document.getElementById('current-user-email').innerText = user.email;
-
-  document.getElementById('auth-form').reset();
-
-  renderTransactions();
-  updateCalculations();
+function formatFirebaseError(code) {
+  switch (code) {
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/user-not-found':
+      return 'No account exists with this email.';
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential':
+      return 'Incorrect password or credentials.';
+    case 'auth/email-already-in-use':
+      return 'An account with this email already exists. Please Log In.';
+    case 'auth/weak-password':
+      return 'Password should be at least 6 characters.';
+    default:
+      return 'Authentication failed. Please check your network and details.';
+  }
 }
 
-function logout() {
-  clearSession();
-  currentUser = null;
-
-  document.getElementById('auth-form').reset();
-  document.getElementById('auth-section').classList.remove('hidden');
-  document.getElementById('dashboard-section').classList.add('hidden');
-  switchAuthTab('login');
+// --- 4. REAL-TIME TRANSACTIONS (FIRESTORE) ---
+function listenToUserTransactions(uid) {
+  // Syncs entries live across all connected devices
+  unsubscribeTransactions = db.collection('users')
+    .doc(uid)
+    .collection('transactions')
+    .orderBy('timestamp', 'desc')
+    .onSnapshot((snapshot) => {
+      currentTransactions = [];
+      snapshot.forEach((doc) => {
+        currentTransactions.push({ id: doc.id, ...doc.data() });
+      });
+      renderTransactions();
+      updateCalculations();
+    }, (error) => {
+      console.error("Firestore sync error:", error);
+    });
 }
 
-// --- TRANSACTIONS & CALCULATIONS ---
-function handleNewTx(e) {
+async function handleNewTx(e) {
   e.preventDefault();
   if (!currentUser) return;
 
@@ -267,6 +180,7 @@ function handleNewTx(e) {
   const amountInput = document.getElementById('tx-amount');
   const typeInput = document.getElementById('tx-type');
   const categoryInput = document.getElementById('tx-category');
+  const submitBtn = document.getElementById('tx-submit-btn');
 
   const desc = descInput.value.trim();
   const amount = parseFloat(amountInput.value);
@@ -275,41 +189,40 @@ function handleNewTx(e) {
 
   if (!desc || isNaN(amount) || amount <= 0) return;
 
-  const transactions = getUserTransactions(currentUser.email);
-  const newTx = {
-    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-    desc,
-    amount,
-    type,
-    category,
-    date: new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
-  };
+  submitBtn.disabled = true;
 
-  transactions.unshift(newTx);
-  saveUserTransactions(currentUser.email, transactions);
+  try {
+    await db.collection('users').doc(currentUser.uid).collection('transactions').add({
+      desc,
+      amount,
+      type,
+      category,
+      date: new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
 
-  descInput.value = '';
-  amountInput.value = '';
-
-  renderTransactions();
-  updateCalculations();
+    descInput.value = '';
+    amountInput.value = '';
+  } catch (err) {
+    alert('Failed to save to cloud database. Please verify Firestore test mode is enabled.');
+    console.error(err);
+  } finally {
+    submitBtn.disabled = false;
+  }
 }
 
-function removeTx(id) {
+async function removeTx(id) {
   if (!currentUser) return;
-  let transactions = getUserTransactions(currentUser.email);
-  transactions = transactions.filter(t => t.id !== id);
-  saveUserTransactions(currentUser.email, transactions);
-
-  renderTransactions();
-  updateCalculations();
+  try {
+    await db.collection('users').doc(currentUser.uid).collection('transactions').doc(id).delete();
+  } catch (err) {
+    alert('Could not delete transaction. Try again.');
+  }
 }
 
+// --- 5. METRICS & RENDERING ---
 function updateCalculations() {
-  if (!currentUser) return;
-  const transactions = getUserTransactions(currentUser.email);
-
-  const totals = transactions.reduce((acc, curr) => {
+  const totals = currentTransactions.reduce((acc, curr) => {
     if (curr.type === 'income') acc.income += curr.amount;
     if (curr.type === 'expense') acc.expense += curr.amount;
     return acc;
@@ -323,32 +236,31 @@ function updateCalculations() {
 }
 
 function renderTransactions() {
-  if (!currentUser) return;
   const listEl = document.getElementById('tx-list');
   const searchQuery = (document.getElementById('filter-search').value || '').toLowerCase().trim();
   const filterType = document.getElementById('filter-type').value;
 
-  let transactions = getUserTransactions(currentUser.email);
+  let filtered = [...currentTransactions];
 
   if (filterType !== 'all') {
-    transactions = transactions.filter(t => t.type === filterType);
+    filtered = filtered.filter(t => t.type === filterType);
   }
 
   if (searchQuery) {
-    transactions = transactions.filter(t => 
-      t.desc.toLowerCase().includes(searchQuery) || 
-      t.category.toLowerCase().includes(searchQuery)
+    filtered = filtered.filter(t => 
+      (t.desc && t.desc.toLowerCase().includes(searchQuery)) || 
+      (t.category && t.category.toLowerCase().includes(searchQuery))
     );
   }
 
   listEl.innerHTML = '';
 
-  if (transactions.length === 0) {
+  if (filtered.length === 0) {
     listEl.innerHTML = `<li class="empty-state">No transactions found.</li>`;
     return;
   }
 
-  transactions.forEach(t => {
+  filtered.forEach(t => {
     const li = document.createElement('li');
     li.className = `tx-item ${t.type}`;
     const prefix = t.type === 'income' ? '+' : '-';
@@ -366,11 +278,3 @@ function renderTransactions() {
     listEl.appendChild(li);
   });
 }
-
-// Initial session check
-window.addEventListener('DOMContentLoaded', () => {
-  const activeSession = getSession();
-  if (activeSession) {
-    initDashboard(activeSession);
-  }
-});
