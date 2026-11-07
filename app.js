@@ -21,11 +21,18 @@ let unsubscribeTransactions = null;
 
 // --- 2. SET DEFAULT MONTH ON LOAD ---
 document.addEventListener('DOMContentLoaded', () => {
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthNames = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
   const currentMonthIndex = new Date().getMonth();
   const filterMonthEl = document.getElementById('filter-month');
   if (filterMonthEl) {
-    filterMonthEl.value = monthNames[currentMonthIndex]; // Automatically sets the UI to current month
+    // Capitalize the first letter for the UI dropdown match (e.g., "Nov")
+    const formattedMonth = monthNames[currentMonthIndex].charAt(0).toUpperCase() + monthNames[currentMonthIndex].slice(1);
+    
+    // Check if the option exists, then set it
+    const optionExists = Array.from(filterMonthEl.options).some(opt => opt.value === formattedMonth);
+    if (optionExists) {
+      filterMonthEl.value = formattedMonth;
+    }
   }
 });
 
@@ -248,18 +255,35 @@ function renderTransactions() {
   const filterType = document.getElementById('filter-type').value;
   
   const filterMonthEl = document.getElementById('filter-month');
-  const filterMonth = filterMonthEl ? filterMonthEl.value : 'all';
+  const filterMonth = filterMonthEl ? filterMonthEl.value.toLowerCase() : 'all';
 
   let filtered = [...currentTransactions];
 
+  // 1. Filter by Type (Income/Expense)
   if (filterType !== 'all') {
     filtered = filtered.filter(t => t.type === filterType);
   }
 
+  // 2. Filter by Month (Bulletproof Timestamp & String Fallback check)
   if (filterMonth !== 'all') {
-    filtered = filtered.filter(t => t.date && t.date.includes(filterMonth));
+    filtered = filtered.filter(t => {
+      // Check 1: Try reading the direct Firebase timestamp first (Most reliable for past data)
+      if (t.timestamp && typeof t.timestamp.toDate === 'function') {
+        const txMonthIndex = t.timestamp.toDate().getMonth();
+        const monthNames = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+        if (monthNames[txMonthIndex] === filterMonth) return true;
+      }
+      
+      // Check 2: Fallback to checking the text string (Case-insensitive)
+      if (t.date && t.date.toLowerCase().includes(filterMonth)) {
+        return true;
+      }
+      
+      return false;
+    });
   }
 
+  // 3. Filter by Search Query
   if (searchQuery) {
     filtered = filtered.filter(t => 
       (t.desc && t.desc.toLowerCase().includes(searchQuery)) || 
@@ -267,13 +291,14 @@ function renderTransactions() {
     );
   }
 
-  // Update metrics based ONLY on the filtered transactions
+  // Update Top Cards Based on Filter
   updateCalculations(filtered);
 
+  // Render to Screen
   listEl.innerHTML = '';
 
   if (filtered.length === 0) {
-    listEl.innerHTML = `<li class="empty-state">No transactions found.</li>`;
+    listEl.innerHTML = `<li class="empty-state">No transactions found for this period.</li>`;
     return;
   }
 
