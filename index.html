@@ -15,7 +15,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-
+  
   <!-- AUTHENTICATION VIEW -->
   <div id="auth-section" class="auth-container">
     <div class="brand-header">
@@ -126,6 +126,23 @@
         <h4>Transactions</h4>
         <div class="filter-bar">
           <input type="text" id="filter-search" placeholder="Search entries..." oninput="renderTransactions()" />
+          
+          <select id="filter-month" onchange="renderTransactions()">
+            <option value="all">All Months</option>
+            <option value="Jan">Jan</option>
+            <option value="Feb">Feb</option>
+            <option value="Mar">Mar</option>
+            <option value="Apr">Apr</option>
+            <option value="May">May</option>
+            <option value="Jun">Jun</option>
+            <option value="Jul">Jul</option>
+            <option value="Aug">Aug</option>
+            <option value="Sep">Sep</option>
+            <option value="Oct">Oct</option>
+            <option value="Nov">Nov</option>
+            <option value="Dec">Dec</option>
+          </select>
+
           <select id="filter-type" onchange="renderTransactions()">
             <option value="all">All Types</option>
             <option value="income">Income</option>
@@ -140,4 +157,4 @@
 
   <script src="app.js"></script>
 </body>
-</html> 
+</html>
