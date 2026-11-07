@@ -161,24 +161,6 @@ body {
   background-color: var(--primary-hover);
 }
 
-.demo-btn {
-  width: 100%;
-  padding: 10px;
-  background-color: transparent;
-  color: var(--muted);
-  border: 1px dashed var(--border);
-  border-radius: 8px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 10px;
-}
-
-.demo-btn:hover {
-  background: var(--bg);
-  color: var(--text);
-}
-
 .error-msg {
   color: var(--expense);
   font-size: 0.8rem;
@@ -191,81 +173,6 @@ body {
   font-size: 0.8rem;
   margin-top: 6px;
   display: none;
-}
-
-/* Modal Overlay & Dialog */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-  padding: 16px;
-}
-
-.modal-card {
-  background: var(--surface);
-  width: 100%;
-  max-width: 400px;
-  border-radius: var(--radius);
-  padding: 24px;
-  box-shadow: var(--shadow-lg);
-  border: 1px solid var(--border);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.modal-header h3 {
-  font-size: 1.15rem;
-  font-weight: 700;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 1.4rem;
-  color: var(--muted);
-  cursor: pointer;
-  line-height: 1;
-}
-
-.modal-desc {
-  font-size: 0.85rem;
-  color: var(--muted);
-  margin-bottom: 20px;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 16px;
-}
-
-.btn-cancel {
-  flex: 1;
-  padding: 10px;
-  background: #f1f5f9;
-  color: var(--muted);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.modal-submit {
-  flex: 1.4;
-  margin-top: 0;
 }
 
 /* Dashboard Styles */
@@ -394,6 +301,7 @@ body {
   display: flex;
   gap: 8px;
   margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
 .filter-bar select,
@@ -406,6 +314,11 @@ body {
 
 .filter-bar input {
   flex: 1;
+  min-width: 150px;
+}
+
+.filter-bar select {
+  min-width: 110px;
 }
 
 .tx-list {
