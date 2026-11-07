@@ -1,4 +1,4 @@
-// --- 1. FIREBASE CONFIGURATION ---
+// --- 1. FIREBASE CONFIGURATION & INITIALIZATION ---
 const firebaseConfig = {
   apiKey: "AIzaSyDXWG_MFR_d_6BmOBKR0vCXAkrzqDwxD8s",
   authDomain: "my-budget-tracker-1db1a.firebaseapp.com",
@@ -9,7 +9,6 @@ const firebaseConfig = {
   measurementId: "G-DZ0VFDZ9YR"
 };
 
-// Initialize Firebase Services
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
@@ -20,7 +19,17 @@ let currentUser = null;
 let currentTransactions = [];
 let unsubscribeTransactions = null;
 
-// --- 2. AUTH STATE LISTENER (CROSS-DEVICE SYNC) ---
+// --- 2. SET DEFAULT MONTH ON LOAD ---
+document.addEventListener('DOMContentLoaded', () => {
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const currentMonthIndex = new Date().getMonth();
+  const filterMonthEl = document.getElementById('filter-month');
+  if (filterMonthEl) {
+    filterMonthEl.value = monthNames[currentMonthIndex]; // Automatically sets the UI to current month
+  }
+});
+
+// --- 3. AUTH STATE LISTENER (CROSS-DEVICE SYNC) ---
 auth.onAuthStateChanged((user) => {
   if (user) {
     currentUser = user;
@@ -41,7 +50,7 @@ auth.onAuthStateChanged((user) => {
   }
 });
 
-// --- 3. AUTHENTICATION ACTIONS ---
+// --- 4. AUTHENTICATION ACTIONS ---
 function switchAuthTab(mode) {
   currentAuthMode = mode;
   const tabLogin = document.getElementById('tab-login');
@@ -153,9 +162,8 @@ function formatFirebaseError(code) {
   }
 }
 
-// --- 4. REAL-TIME TRANSACTIONS (FIRESTORE) ---
+// --- 5. REAL-TIME TRANSACTIONS (FIRESTORE) ---
 function listenToUserTransactions(uid) {
-  // Syncs entries live across all connected devices
   unsubscribeTransactions = db.collection('users')
     .doc(uid)
     .collection('transactions')
@@ -166,7 +174,6 @@ function listenToUserTransactions(uid) {
         currentTransactions.push({ id: doc.id, ...doc.data() });
       });
       renderTransactions();
-      updateCalculations();
     }, (error) => {
       console.error("Firestore sync error:", error);
     });
@@ -220,9 +227,9 @@ async function removeTx(id) {
   }
 }
 
-// --- 5. METRICS & RENDERING ---
-function updateCalculations() {
-  const totals = currentTransactions.reduce((acc, curr) => {
+// --- 6. METRICS & RENDERING ---
+function updateCalculations(transactions = currentTransactions) {
+  const totals = transactions.reduce((acc, curr) => {
     if (curr.type === 'income') acc.income += curr.amount;
     if (curr.type === 'expense') acc.expense += curr.amount;
     return acc;
@@ -239,11 +246,18 @@ function renderTransactions() {
   const listEl = document.getElementById('tx-list');
   const searchQuery = (document.getElementById('filter-search').value || '').toLowerCase().trim();
   const filterType = document.getElementById('filter-type').value;
+  
+  const filterMonthEl = document.getElementById('filter-month');
+  const filterMonth = filterMonthEl ? filterMonthEl.value : 'all';
 
   let filtered = [...currentTransactions];
 
   if (filterType !== 'all') {
     filtered = filtered.filter(t => t.type === filterType);
+  }
+
+  if (filterMonth !== 'all') {
+    filtered = filtered.filter(t => t.date && t.date.includes(filterMonth));
   }
 
   if (searchQuery) {
@@ -252,6 +266,9 @@ function renderTransactions() {
       (t.category && t.category.toLowerCase().includes(searchQuery))
     );
   }
+
+  // Update metrics based ONLY on the filtered transactions
+  updateCalculations(filtered);
 
   listEl.innerHTML = '';
 
